@@ -1,0 +1,4 @@
+Flask>=3.0,<4.0
+numpy>=1.26
+# Gunicorn is used only for optional deployment on Linux hosting platforms.
+gunicorn>=21.2

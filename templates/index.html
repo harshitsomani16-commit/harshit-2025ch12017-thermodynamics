@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a1020" />
+  <title>PVT & Thermo Solver | Harshit Somani</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <div class="app-shell" id="appShell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="PVT Lab home">
+        <span class="brand-mark"><span></span><span></span><span></span></span>
+        <span class="brand-copy"><strong>PVT<span>LAB</span></strong><small>REAL-GAS WORKBENCH</small></span>
+      </a>
+      <div class="topbar-right">
+        <span class="live-indicator"><i></i> CALCULATION ENGINE ONLINE</span>
+        <div class="author-chip"><span class="author-avatar">HS</span><span><b>Harshit Somani</b><small>THERMODYNAMICS PROJECT</small></span></div>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="page-heading">
+        <div class="eyebrow"><span class="eyebrow-line"></span> PURE COMPONENT · CUBIC EQUATIONS OF STATE</div>
+        <h1>PVT &amp; <em>Thermo Solver</em></h1>
+        <p>Calculate real-gas PVT behaviour, enthalpy, entropy and pure-component fugacity — all from one central workbench.</p>
+        <div class="heading-tags"><span>4 CUBIC EOS MODELS</span><span>10 PURE COMPONENTS</span><span>H · S · FUGACITY</span></div>
+      </section>
+
+      <section class="workbench-layout">
+        <!-- LEFT SIDE: selected gas information and project guidance -->
+        <aside class="side-rail left-rail">
+          <section class="side-panel gas-profile" id="gasRibbon">
+            <div class="side-card-kicker">SELECTED COMPONENT</div>
+            <div class="gas-identity">
+              <div class="gas-symbol" id="gasSymbol">CH₄</div>
+              <div class="gas-title"><h2 id="gasName">Methane</h2><span id="gasMeta">Alkane · CH₄ · 16.043 g/mol</span></div>
+            </div>
+            <p class="gas-visual-note" id="gasVisualNote">Inspired by the blue flame of clean methane combustion.</p>
+            <div class="gas-stats side-stats">
+              <div><small>CRITICAL TEMP.</small><strong id="gasTc">190.6 <i>K</i></strong></div>
+              <div><small>CRITICAL PRESS.</small><strong id="gasPc">45.99 <i>bar</i></strong></div>
+              <div><small>ACENTRIC FACTOR</small><strong id="gasOmega">0.012</strong></div>
+            </div>
+            <div class="gas-extra-grid">
+              <div><small>MOLAR MASS</small><b id="gasMw">16.043 g/mol</b></div>
+              <div><small>CRITICAL Z</small><b id="gasZc">0.286</b></div>
+              <div><small>CRITICAL VOLUME</small><b id="gasVc">98.6 cm³/mol</b></div>
+              <div><small>NORMAL BOILING POINT</small><b id="gasTb">111.4 K</b></div>
+            </div>
+            <div class="gas-theme-row"><span class="palette-dot"></span><span>INTERFACE PALETTE</span><b id="gasTheme">BLUE-FLAME CYAN</b></div>
+            <p class="palette-disclaimer">Colour is a visual theme inspired by a flame, cryogenic liquid or industrial context — not necessarily the actual colour of the gas.</p>
+          </section>
+
+          <section class="side-panel guide-card">
+            <div class="side-card-kicker">WORKFLOW</div>
+            <h3>Three steps to a state</h3>
+            <div class="guide-step"><span>01</span><div><b>Choose a component</b><small>Select one of the ten pure gases.</small></div></div>
+            <div class="guide-step"><span>02</span><div><b>Set the model & state</b><small>Pick a cubic EOS and enter two known variables.</small></div></div>
+            <div class="guide-step"><span>03</span><div><b>Read the properties</b><small>Review Z, V, φ, f, H, S and the P–V curve.</small></div></div>
+          </section>
+
+          <section class="side-panel caution-card">
+            <div class="side-card-kicker">ENGINEERING NOTE</div>
+            <h3>Model awareness matters</h3>
+            <p>Classic cubic EOS models are engineering approximations. Water and ammonia are polar/associating fluids; interpret their predictions with care. Hydrogen is omitted from this version because the textbook discusses special effective critical parameters for quantum gases.</p>
+          </section>
+        </aside>
+
+        <!-- CENTER: the calculator is the visual and functional focus -->
+        <section class="main-column">
+          <section class="panel calculator-panel">
+            <div class="panel-heading calculator-heading">
+              <div><span class="section-kicker">CENTRAL CALCULATOR / 01</span><h2>Build your thermodynamic state</h2></div>
+              <span class="step-badge">P · V · T</span>
+            </div>
+            <form id="calcForm">
+              <div class="calculator-select-grid">
+                <div class="form-block">
+                  <label class="field-label" for="gasSelect">PURE COMPONENT</label>
+                  <div class="select-wrap"><select id="gasSelect" name="gas"></select><span class="select-arrow">⌄</span></div>
+                </div>
+                <div class="form-block">
+                  <label class="field-label" for="eosSelect">CUBIC EQUATION OF STATE</label>
+                  <div class="select-wrap"><select id="eosSelect" name="eos">
+                    <option value="pr">Peng–Robinson (PR)</option>
+                    <option value="srk">Soave–Redlich–Kwong (SRK)</option>
+                    <option value="rk">Redlich–Kwong (RK)</option>
+                    <option value="vdw">van der Waals (vdW)</option>
+                  </select><span class="select-arrow">⌄</span></div>
+                  <p class="model-note" id="modelNote">A strong general-purpose choice for vapour–liquid equilibrium and hydrocarbon systems.</p>
+                </div>
+              </div>
+
+              <div class="calculator-rule"></div>
+              <div class="field-label-row"><label class="field-label" for="modeSelect">CALCULATION MODE</label><span class="unit-note">ENTER TWO KNOWN VARIABLES</span></div>
+              <div class="select-wrap mode-select"><select id="modeSelect" name="mode">
+                <option value="volume">Solve molar volume · V (given P and T)</option>
+                <option value="pressure">Solve pressure · P (given T and V)</option>
+                <option value="temperature">Solve temperature · T (given P and V)</option>
+              </select><span class="select-arrow">⌄</span></div>
+
+              <div class="input-grid calculator-input-grid" id="stateInputs">
+                <div class="input-field" data-input="p"><label for="pInput">PRESSURE <span>bar</span></label><div class="input-box"><input id="pInput" type="number" value="10" min="0.000001" step="any"><span>bar</span></div></div>
+                <div class="input-field" data-input="t"><label for="tInput">TEMPERATURE <span>K</span></label><div class="input-box"><input id="tInput" type="number" value="350" min="0.000001" step="any"><span>K</span></div></div>
+                <div class="input-field" data-input="v"><label for="vInput">MOLAR VOLUME <span>L/mol</span></label><div class="input-box"><input id="vInput" type="number" value="2.5" min="0.000001" step="any"><span>L/mol</span></div></div>
+              </div>
+
+              <div class="phase-row" id="phaseRow"><label class="field-label" for="phaseSelect">ROOT / PHASE SELECTION</label><div class="select-wrap"><select id="phaseSelect"><option value="stable">Stable root · lowest fugacity</option><option value="vapor">Vapour root · largest Z</option><option value="liquid">Liquid root · smallest Z</option></select><span class="select-arrow">⌄</span></div></div>
+
+              <button type="button" class="advanced-toggle" id="advancedToggle"><span>＋</span> Reference state &amp; textbook Cp correlation <small>OPTIONAL</small></button>
+              <div class="advanced-fields" id="advancedFields" hidden>
+                <div class="input-grid two-col">
+                  <div class="input-field"><label for="tRefInput">REFERENCE T <span>K</span></label><div class="input-box"><input id="tRefInput" type="number" value="298.15" step="any"><span>K</span></div></div>
+                  <div class="input-field"><label for="pRefInput">REFERENCE P <span>bar</span></label><div class="input-box"><input id="pRefInput" type="number" value="1" step="any"><span>bar</span></div></div>
+                  <div class="input-field"><label for="hRefInput">H REF. <span>J/mol</span></label><div class="input-box"><input id="hRefInput" type="number" value="0" step="any"><span>J/mol</span></div></div>
+                  <div class="input-field"><label for="sRefInput">S REF. <span>J/mol·K</span></label><div class="input-box"><input id="sRefInput" type="number" value="0" step="any"><span>J/mol·K</span></div></div>
+                </div>
+                <div class="cp-reference" id="cpReference">
+                  <b>IDEAL-GAS Cp(T) · SMITH ET AL., APPENDIX C, TABLE C.1</b>
+                  <div id="cpEquation">Cp/R = A + BT + CT² + D/T²</div>
+                  <small id="cpRange">Coefficients change with the selected pure component. Published range: 298 K to Tmax.</small>
+                </div>
+              </div>
+
+              <button class="calculate-btn" id="calculateBtn" type="submit"><span>Calculate properties</span><b>↗</b></button>
+              <div class="error-box" id="errorBox" role="alert" hidden></div>
+            </form>
+            <div class="controls-foot"><span class="foot-pulse"></span> Backend calculations in SI units · inputs shown in bar / K / L·mol⁻¹</div>
+          </section>
+
+          <section class="panel result-panel" id="resultPanel">
+            <div class="panel-heading"><div><span class="section-kicker">LIVE OUTPUT / 02</span><h2>Calculated state properties</h2></div><div class="result-actions"><span class="phase-pill" id="phasePill">AWAITING INPUT</span><button class="icon-button" id="copyBtn" title="Copy results" disabled>⧉</button></div></div>
+            <div class="empty-state" id="emptyState"><div class="empty-graphic"><span>Z</span><i></i><i></i><i></i></div><h3>Your state is waiting.</h3><p>Choose a component, equation and known variables, then calculate to populate the result cards.</p></div>
+            <div class="results-content" id="resultsContent" hidden>
+              <div class="metric-grid">
+                <article class="metric-card metric-primary"><div class="metric-top"><span>COMPRESSIBILITY</span><span class="metric-icon">Z</span></div><strong id="zValue">—</strong><small id="zCaption">Deviation from ideal-gas behaviour</small></article>
+                <article class="metric-card"><div class="metric-top"><span>MOLAR VOLUME</span><span class="metric-icon">V</span></div><strong id="vValue">—</strong><small>Litres per mole</small></article>
+                <article class="metric-card"><div class="metric-top"><span>FUGACITY COEFFICIENT</span><span class="metric-icon">φ</span></div><strong id="phiValue">—</strong><small id="phiCaption">φ = f / P</small></article>
+                <article class="metric-card"><div class="metric-top"><span>PURE-COMPONENT FUGACITY</span><span class="metric-icon">f</span></div><strong id="fValue">—</strong><small>Effective pressure · bar</small></article>
+              </div>
+              <div class="state-line"><span>CALCULATED STATE</span><b id="stateSummary">—</b><span class="root-summary" id="rootSummary">—</span></div>
+            </div>
+          </section>
+
+          <section class="panel thermo-panel" id="thermoPanel">
+            <div class="panel-heading"><div><span class="section-kicker">ENERGY &amp; DISORDER / 03</span><h2>Thermodynamic properties</h2></div><span class="scope-tag">H + S ONLY</span></div>
+            <div class="thermo-grid" id="thermoEmpty">
+              <div class="thermo-placeholder"><span>H</span><p>Enthalpy will appear here after the EOS is solved.</p></div>
+              <div class="thermo-placeholder"><span>S</span><p>Entropy will appear here after the EOS is solved.</p></div>
+            </div>
+            <div class="thermo-grid" id="thermoResults" hidden>
+              <article class="thermo-card enthalpy-card"><div class="thermo-card-top"><span class="thermo-symbol">H</span><span class="thermo-label">MOLAR ENTHALPY</span><span class="thermo-unit">J/mol</span></div><strong id="hValue">—</strong><div class="decomp"><div><span>Ideal-gas contribution</span><b id="hIdeal">—</b></div><div><span>EOS residual</span><b id="hResidual">—</b></div></div><div class="thermo-bar"><i id="hBar"></i></div></article>
+              <article class="thermo-card entropy-card"><div class="thermo-card-top"><span class="thermo-symbol">S</span><span class="thermo-label">MOLAR ENTROPY</span><span class="thermo-unit">J/mol·K</span></div><strong id="sValue">—</strong><div class="decomp"><div><span>Ideal-gas contribution</span><b id="sIdeal">—</b></div><div><span>EOS residual</span><b id="sResidual">—</b></div></div><div class="thermo-bar"><i id="sBar"></i></div></article>
+            </div>
+            <p class="thermo-footnote">H = H<sub>ideal</sub> + H<sub>res</sub> &nbsp;·&nbsp; S = S<sub>ideal</sub> + S<sub>res</sub>. Reported values are relative to the reference state entered above.</p>
+          </section>
+
+          <section class="panel chart-panel central-chart-panel">
+            <div class="panel-heading chart-heading"><div><span class="section-kicker">PVT VISUALISATION / 04</span><h2>Pressure–volume isotherm</h2></div><div class="chart-tools"><span class="chart-legend"><i></i> Selected EOS</span><button class="small-text-btn" id="refreshCurveBtn">↻ Refresh curve</button></div></div>
+            <div id="pvtChart" class="chart-area"><div class="chart-empty">Run a calculation to generate the selected gas's P–V isotherm.</div></div>
+            <div class="chart-caption"><span>Pressure vs molar volume at the current temperature</span><span id="chartTemp">T = — K</span></div>
+          </section>
+        </section>
+
+        <!-- RIGHT SIDE: formulas, parameters and source trail -->
+        <aside class="side-rail right-rail">
+          <section class="panel equation-panel side-equation-panel">
+            <div class="panel-heading"><div><span class="section-kicker">MODEL INSPECTOR</span><h2>Selected equation</h2></div><span class="model-code" id="modelCode">PR</span></div>
+            <div class="equation-name" id="equationName">Peng–Robinson equation of state</div>
+            <div class="equation-display" id="equationDisplay">P = RT / (V − b) − aα / [V(V + b) + b(V − b)]</div>
+            <div class="parameter-grid">
+              <div><small>ATTRACTIVE PARAMETER</small><b id="aValue">—</b><i>a(T) · Pa·m⁶/mol²</i></div>
+              <div><small>COVOLUME PARAMETER</small><b id="bValue">—</b><i>b · m³/mol</i></div>
+              <div><small>ALPHA FUNCTION</small><b id="alphaValue">—</b><i>α(T)</i></div>
+              <div><small>DA / DT</small><b id="daValue">—</b><i>temperature derivative</i></div>
+            </div>
+            <div class="model-foot" id="modelFoot">The equation's temperature-dependent attraction term adjusts how strongly molecules attract one another.</div>
+          </section>
+
+          <section class="side-panel formula-card">
+            <div class="side-card-kicker">PROPERTY RELATIONS</div>
+            <h3>What the solver evaluates</h3>
+            <div class="formula-row"><b>Pure-component fugacity</b><strong>f = φP</strong><small>φ is obtained from ln φ = Z − 1 − ln(Z − B) − qI.</small></div>
+            <div class="formula-row"><b>Residual enthalpy · Eq. 13.75</b><strong>Hᴿ/(RT) = Z − 1 + (δ − 1)qI</strong><small>δ = d ln α / d ln Tr</small></div>
+            <div class="formula-row"><b>Residual entropy · Eq. 13.76</b><strong>Sᴿ/R = ln(Z − B) + δqI</strong><small>B = bP/(RT), q = a(T)/(bRT); I is the generic-cubic logarithmic integral.</small></div>
+            <div class="formula-row"><b>Total properties · Eqs. 6.50–6.51</b><strong>H = Hᵢᵍ + Hᴿ &nbsp;·&nbsp; S = Sᵢᵍ + Sᴿ</strong><small>Ideal-gas H/S are integrated from Cp(T) and the selected reference state.</small></div>
+            <p class="formula-caveat">The ideal-gas Cp/R polynomial is from Appendix C, Table C.1. The cubic-EOS residual expressions are from Chapter 13, Section 13.6. Values are reference-relative, not formation properties.</p>
+          </section>
+
+          <section class="side-panel source-card">
+            <div class="side-card-kicker">SOURCE CHECK</div>
+            <h3>Technical references</h3>
+            <a href="https://pages.nist.gov/teqp-docs/en/latest/models/cubics.html" target="_blank" rel="noreferrer">NIST teqp · cubic EOS framework ↗</a>
+            <a href="https://dwsim.org/help/main/40-thermodynamic-properties.html" target="_blank" rel="noreferrer">DWSIM · H/S departure functions ↗</a>
+            <a href="https://webbook.nist.gov/chemistry/" target="_blank" rel="noreferrer">NIST Chemistry WebBook · fluid data ↗</a>
+            <a href="https://pressbooks.bccampus.ca/thermo1/back-matter/critical-properties/" target="_blank" rel="noreferrer">Engineering thermodynamics · critical table ↗</a>
+            <p>See the project README and SOURCES file for the equation conventions, property-data provenance and assumptions.</p>
+          </section>
+        </aside>
+      </section>
+
+      <section class="method-strip">
+        <div class="method-icon">∑</div><div><span class="section-kicker">CALCULATION METHOD</span><h3>One generalized cubic framework. Four model families.</h3><p>The solver forms a cubic polynomial in compressibility factor Z, filters physically admissible roots, selects a phase root and evaluates residual thermodynamic functions. Pure-component fugacity is calculated as f = φP.</p></div>
+        <div class="method-eq">Z³ + c₂Z² + c₁Z + c₀ = 0</div>
+      </section>
+
+      <section class="assumptions-grid">
+        <div class="assumption"><span>01</span><div><b>Pure component</b><p>No mixture interaction parameters or binary interaction coefficients are used.</p></div></div>
+        <div class="assumption"><span>02</span><div><b>Ideal-gas baseline</b><p>H and S integrate the temperature-dependent ideal-gas Cp/R polynomial from Appendix C, Table C.1, plus EOS residual terms.</p></div></div>
+        <div class="assumption"><span>03</span><div><b>Model limitations</b><p>Cubic EOS estimates can be less reliable for strongly polar/associating fluids and near critical states. Appendix C Cp fits are stated for 298 K to Tmax.</p></div></div>
+      </section>
+    </main>
+
+    <footer class="footer"><div class="footer-brand">PVT<span>LAB</span></div><div>Built by <b>Harshit Somani</b> · Thermodynamics Project</div><div class="footer-links"><a href="#references">REFERENCES</a><span>·</span><span>PURE-FLUID MODE</span></div></footer>
+    <section class="references" id="references"><span class="section-kicker">PRIMARY TEXTBOOK &amp; CROSS-CHECK REFERENCES</span><div class="reference-links"><a href="https://webbook.nist.gov/chemistry/" target="_blank" rel="noreferrer">NIST Chemistry WebBook · independent property-data check</a><a href="https://pages.nist.gov/teqp-docs/en/latest/models/cubics.html" target="_blank" rel="noreferrer">NIST teqp · cubic EOS cross-check</a></div><p>Primary source: J. M. Smith, H. C. Van Ness, M. M. Abbott &amp; M. T. Swihart, <i>Introduction to Chemical Engineering Thermodynamics</i>, 8th ed. (2018): cubic EOS and constants (Sec. 3.6, Table 3.1, pp. 95–101); residual properties (Sec. 6.2, Eqs. 6.50–6.51); pure-species fugacity (Sec. 10.5, Eqs. 10.31–10.33); cubic-EOS residual H/S (Sec. 13.6, Eqs. 13.74–13.76); pure-fluid data (Appendix B, Table B.1); ideal-gas Cp (Appendix C, Table C.1). Values and assumptions are itemised in SOURCES.md.</p></section>
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
